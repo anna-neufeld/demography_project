@@ -11,7 +11,7 @@ require(readr)
 require(dplyr)
 
 ##Cluster set up stuff
-cl <- makeCluster(3) #Number of cores you want 
+cl <- makeCluster(4) #Number of cores you want 
 registerDoParallel(cl)
 clusterSetupRNG(cl,seed=1)
 
@@ -24,8 +24,8 @@ county_migration_data <- read_csv("county_migration_data.csv")
 simHorizon <- setSimHorizon(startDate="01/01/1991", endDate="31/12/2010")
 maxAge <- 100 
 
-set.seed(12345)
-nTrials <- 1000
+set.seed(999)
+nTrials <- 300
 #### Normal, very small SD
 #error.em <- rnorm(nTrials, mean=0, sd=0.025)  
 #error.im <- rnorm(nTrials, mean=0, sd=0.025)
@@ -47,9 +47,6 @@ paramSpace <- cbind(error.em, error.im, u18.em, o45.em, u18.im, o45.im)
 paramSpace_big <- data.frame(matrix(apply(paramSpace, 1, rep, 3), ncol=6, byrow=TRUE))
 names(paramSpace_big) = colnames(paramSpace)
 paramSpace_big$seed <- rep(c(123,456,789), nTrials)
-
-#### TEMPORARY: PLEASE DELETE
-paramSpace_big <- paramSpace_big[sample(1:NROW(paramSpace_big), NROW(paramSpace_big)),]
 
 ##### TO SAVE TIME: Only initialize the Berkshire Inital Pop once per seed.
 set.seed(123)
@@ -79,7 +76,6 @@ clusterExport(cl, c("paramSpace_big", "initPops", "county_migration_data",
 
 
 ##### NOW RUN
-nTrials=1
 out <- foreach(j = c(1:(nTrials*3))) %dopar% {
   require(MicSim)
   require(dplyr)
@@ -87,7 +83,7 @@ out <- foreach(j = c(1:(nTrials*3))) %dopar% {
   require(readr)
   require(dplyr)
   require(eeptools)
-  write(paste("Starting ", j, "th job.\n",sep=''),file='demog_log.txt',append=TRUE)
+  write(paste("Starting ", j, "th job.\n",sep=''),file='demog_log_3.txt',append=TRUE)
   
   currentParams = paramSpace_big[j,]
   seed <- currentParams$seed
@@ -109,21 +105,20 @@ out <- foreach(j = c(1:(nTrials*3))) %dopar% {
   
   #### Now we should be all ready to run simulation
   source("demog.initialize.transitions.R", local=TRUE)
-  emigrRates(17, 2005, 0.3)
-  pop <- micSim(initPop=initPop[1:1000,], immigrPop=immigrPop, 
+  pop <- micSim(initPop=initPop, immigrPop=immigrPop, 
                transitionMatrix=transitionMatrix, absStates=absStates, 
                initStates=initStates, initStatesProb=initStatesProb, 
                 maxAge=maxAge, simHorizon=simHorizon, fertTr=fertTr) #, cores=2, seeds=c(123, 456))
   source("process_res.R", local=TRUE)
   
    #write "res" to file
-  write(paste(results, collapse=" "), file='results3.txt',append=TRUE)
+  write(paste(results, collapse=" "), file='results_real_2.txt',append=TRUE)
   as.numeric(results)
 }
 
 new_out = as.data.frame(matrix(unlist(out), ncol=53 , byrow=TRUE))
 names(new_out)=names(out[[1]])
-L=3
+L=6
 save(new_out, file = paste("ALL_RES",L,".RData",sep=''))
 stopCluster(cl)
 
