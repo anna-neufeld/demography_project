@@ -1,57 +1,17 @@
-##### My Bayesian Melding Example gave well calibrated predictions
-##### But here's the issue. It doesn't tell me anything about
-##### "what was actually going on with migration".
-##### Because it has that bias term A. 
-##### So the prior draws with the biggest weights are actually ones that
-#### overpredict by 1900 people about. So I can't look at priors with highest weight
-#### to figure out most likely migration situation. Bummer. I will try my
-### own version without "a".
+#### Here's the issue I am noticing.
+#### For a lot of my parameter draws, the results are WAY off from truth.
+#### So standard deviations sigma_i are kind of big
+#### So even though the result from this param set is totally implausible, weight isn't THAT small because
+#### it gets to have a massive SD. 
 
+### IDEA: I have 400 param values. Can I do the method (no a), and then afterwards take only the 100 param values with
+### highest weights. And then redo the sd cals, etc, on only these 100 sets?
+source("Modified_Bayesian_Melding.R")
+biggest <- order(weights, decreasing=TRUE)[1:100]
+res <- total_res[phi2000$ID %in% biggest,]
+total_res <- res
 
-##### AS FAR AS I CAN TELL: posterior and stuff still works totally fine.
-#### I set A to 0, so my "most likely input params" have changed.
-#### Can use this version to actually write about "what might 
-### be happening with migration"
-source("NorthAdams.Real.Info.R")
-y2010 <- realNums2010
-y2010 <- c(y2010[1:5], sum(y2010[6:7]),sum(y2010[8:9]), 
-           sum(y2010[10:11]), y2010[12:13], sum(y2010[14:15]),
-           sum(y2010[16:17]), y2010[18])
-y2000 <- as.numeric(realNums2000)
-names(y2000) <-c("0-4", "5-9", "10-14", "15-19", "20-24", "25-34",
-                 "35-44", "45-54", "55-59", "60-64", "65-74", "75-84",
-                 "85+")
-names(y2010) <- names(y2000)
-#### Just realized that I have 5-year age groups for 2010, but I actually only
-#### have a mix of 5- and 10-year age groups for 2000. I need these to match, so I need to truncate
-#### everything to 10 year age groups. Bummer. 
-#### Source for this data: https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=CF
-
-
-
-#### SIMULATION RESULTS
-load("ALL_RES5.RData") 
-first_its <- new_out ## First 100*3 iterations
-load("ALL_RES6.RData") ### Next 900*3 iterations
-total_res <- as.data.frame(rbind(as.matrix(first_its),as.matrix(new_out)))
-#### Eventually- hopefully CBIND this with another set of results to have more 
-#### total trials
-
-names(total_res) <- c("error.em", "error.im",
-                      "u18.em", "o45.em", "u18.im",
-                      "o45.im", "seed", "pop.2000", "median.age.2000", 
-                      "pop.0.2000", "pop.5.2000", "pop.10.2000", "pop.15.2000",
-                      "pop.20.2000", "pop.25.2000", "pop.30.2000", "pop.35.2000",
-                      "pop.40.2000", "pop.45.2000", "pop.50.2000", "pop.55.2000",
-                      "pop.60.2000", "pop.65.2000", "pop.70.2000", "pop.75.2000",
-                      "pop.80.2000", "pop.85.2000", "pop.90.2000", "pop.95.2000", 
-                      "pop.2010", "median.age.2010",
-                      "pop.0.2010", "pop.5.2010", "pop.10.2010", "pop.15.2010",
-                      "pop.20.2010", "pop.25.2010", "pop.30.2010", "pop.35.2010",
-                      "pop.40.2010", "pop.45.2010", "pop.50.2010", "pop.55.2010",
-                      "pop.60.2010", "pop.65.2010", "pop.70.2010", "pop.75.2010",
-                      "pop.80.2010", "pop.85.2010", "pop.90.2010", "pop.95.2010",
-                      "pop.100.2010", "pop.105.2010")
+#### REDO THE METHOD!!
 K <- 13 ### I have only 13 age groups since I had the unfortunate 10 year thing
 I <- NROW(total_res)/NROW(unique(total_res$seed)) ### number of param sets
 J <- NROW(unique(total_res$seed)) ### seeds per param
@@ -127,7 +87,7 @@ posterior2010 <- function(x, k) {
   return(mysum)
 }
 
-png('posterior2000_noa.png')
+png('posterior2000_MOD.png')
 par(mfrow=c(3,3))
 for (age in 1:9) {
   xrange <- c(0:2500)
@@ -139,7 +99,7 @@ for (age in 1:9) {
   abline(v=quantile(samp, 0.95), lty=2)
 }
 dev.off()
-png('posterior2000_2_noa.png')
+png('posterior2000_2_MOD.png')
 par(mfrow=c(3,3))
 for (age in 10:13) {
   xrange <- c(0:2500)
@@ -205,6 +165,13 @@ for (b in biggest) {
   print(round(apply(res[, c(1:8, 30)], 2, mean), 4))
   print(sum(y2010) - mean(res[,30]))
   print(sum(y2000) - mean(res[,8]))
+}
+
+biggest <- order(weights, decreasing=TRUE)[1:5]
+for (b in biggest) {
+  res <- total_res[phi2000$ID==b,]
+  print(round(apply(res[, c(1:8, 30)], 2, mean), 4))
+  print(sum(y2010) - mean(res[,30]))
 }
 
 

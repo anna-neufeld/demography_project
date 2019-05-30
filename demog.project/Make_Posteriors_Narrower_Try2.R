@@ -1,17 +1,6 @@
-##### My Bayesian Melding Example gave well calibrated predictions
-##### But here's the issue. It doesn't tell me anything about
-##### "what was actually going on with migration".
-##### Because it has that bias term A. 
-##### So the prior draws with the biggest weights are actually ones that
-#### overpredict by 1900 people about. So I can't look at priors with highest weight
-#### to figure out most likely migration situation. Bummer. I will try my
-### own version without "a".
-
-
-##### AS FAR AS I CAN TELL: posterior and stuff still works totally fine.
-#### I set A to 0, so my "most likely input params" have changed.
-#### Can use this version to actually write about "what might 
-### be happening with migration"
+#### Set a max on sigma^2 i to downweight unreasonable scenarios??
+### Being off by more than 200/age group on average is gonna be pretty bad
+### Max sigma^2_i is correponding to SD=100, so 10,000? Let's try that. 
 source("NorthAdams.Real.Info.R")
 y2010 <- realNums2010
 y2010 <- c(y2010[1:5], sum(y2010[6:7]),sum(y2010[8:9]), 
@@ -85,9 +74,10 @@ SSE <- sum(apply(phi2000, 1, function(u) sum((u[1:13]-mus[mus$ID==u[14],2:14])^2
 sigma_sq_delta <- SSE/(I*J*K) 
 
 a <- 0
+
 sigma_sq_is <-rep(0, I)
 for (i in 1:I) {
-  sigma_sq_is[i] <- 1/K*sum((y2000-a-mus[i,2:14])^2)
+  sigma_sq_is[i] <- min(1/K*sum((y2000-a-mus[i,2:14])^2), 22500)
 }
 
 ##### POSTERIOR
@@ -127,32 +117,7 @@ posterior2010 <- function(x, k) {
   return(mysum)
 }
 
-png('posterior2000_noa.png')
-par(mfrow=c(3,3))
-for (age in 1:9) {
-  xrange <- c(0:2500)
-  posteriors <- posterior2000(xrange, age)
-  plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = paste("Posterior for", names(y2000)[age], ", 2000"))
-  abline(v=y2000[age], col="red")
-  samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
-  abline(v=quantile(samp, 0.05), lty=2)
-  abline(v=quantile(samp, 0.95), lty=2)
-}
-dev.off()
-png('posterior2000_2_noa.png')
-par(mfrow=c(3,3))
-for (age in 10:13) {
-  xrange <- c(0:2500)
-  posteriors <- posterior2000(xrange, age)
-  plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = paste("Posterior for", names(y2000)[age], ", 2000"))
-  abline(v=y2000[age], col="red")
-  samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
-  abline(v=quantile(samp, 0.05), lty=2)
-  abline(v=quantile(samp, 0.95), lty=2)
-}
-dev.off()
-
-png('posterior2010_1_noa.png')
+png('posterior2010_1_maxsig.png')
 par(mfrow=c(3,3))
 for (age in 1:9) {
   xrange <- c(0:2500)
@@ -164,7 +129,7 @@ for (age in 1:9) {
   abline(v=quantile(samp, 0.95), lty=2)
 }
 dev.off()
-png('posterior2010_2_noa.png')
+png('posterior2010_2_maxsig.png')
 par(mfrow=c(3,3))
 for (age in 10:13) {
   xrange <- c(0:2500)
@@ -177,10 +142,7 @@ for (age in 10:13) {
 }
 dev.off()
 
-#### For comparison, what happens if we just look at histogram of ALL
-#### predictions for 25-34 in 2010; no weighting
-
-png("weighed_vs_unweighted_no_a.png")
+png("weighed_vs_unweighted_NARROWER.png")
 k <- 6
 allpreds <- psi2010$`25-34`
 real <- as.numeric(y2010[k])
@@ -198,13 +160,3 @@ samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
 abline(v=quantile(samp, 0.05), lty=2)
 abline(v=quantile(samp, 0.95), lty=2)
 dev.off()
-
-biggest <- order(weights, decreasing=TRUE)[1:5]
-for (b in biggest) {
-  res <- total_res[phi2000$ID==b,]
-  print(round(apply(res[, c(1:8, 30)], 2, mean), 4))
-  print(sum(y2010) - mean(res[,30]))
-  print(sum(y2000) - mean(res[,8]))
-}
-
-
