@@ -105,12 +105,6 @@ for (i in 1:I) {
   weights[i] <- product
 } #### ISSUE<- weights getting below machine precision on basically all sets
 
-logweights <- rep(0,I)
-for (i in 1:I) {
-  logweights[i] <- (-K/2*log(2*pi*post.var[i]) - 1/(2*post.var[i])*sum((y2000-a-mus[2:14])^2))
-}
-
-
 par(mfrow=c(3,3))
 for (k in 1:K) {
   testmean <- as.numeric(a+mus[1,k])
