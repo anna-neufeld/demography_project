@@ -11,6 +11,7 @@ y2000 <- as.numeric(realNums2000)
 names(y2000) <-c("0-4", "5-9", "10-14", "15-19", "20-24", "25-34",
                  "35-44", "45-54", "55-59", "60-64", "65-74", "75-84",
                  "85+")
+names(y2010) <- names(y2000)
 #### Just realized that I have 5-year age groups for 2010, but I actually only
 #### have a mix of 5- and 10-year age groups for 2000. I need these to match, so I need to truncate
 #### everything to 10 year age groups. Bummer. 
@@ -19,11 +20,14 @@ names(y2000) <-c("0-4", "5-9", "10-14", "15-19", "20-24", "25-34",
 
 
 #### SIMULATION RESULTS
-load("ALL_RES5.RData")
+load("ALL_RES5.RData") 
+first_its <- new_out ## First 100*3 iterations
+load("ALL_RES6.RData") ### Next 900*3 iterations
+total_res <- as.data.frame(rbind(as.matrix(first_its),as.matrix(new_out)))
 #### Eventually- hopefully CBIND this with another set of results to have more 
 #### total trials
 
-names(new_out) <- c("error.em", "error.im",
+names(total_res) <- c("error.em", "error.im",
                     "u18.em", "o45.em", "u18.im",
                     "o45.im", "seed", "pop.2000", "median.age.2000", 
                     "pop.0.2000", "pop.5.2000", "pop.10.2000", "pop.15.2000",
@@ -39,25 +43,25 @@ names(new_out) <- c("error.em", "error.im",
                     "pop.80.2010", "pop.85.2010", "pop.90.2010", "pop.95.2010",
                     "pop.100.2010", "pop.105.2010")
 K <- 13 ### I have only 13 age groups since I had the unfortunate 10 year thing
-I <- NROW(new_out)/NROW(unique(new_out$seed)) ### number of param sets
-J <- NROW(unique(new_out$seed)) ### seeds per param
+I <- NROW(total_res)/NROW(unique(total_res$seed)) ### number of param sets
+J <- NROW(unique(total_res$seed)) ### seeds per param
  
 #### Summarize. Need to do some annoying work to turn my
 #### output, which is 5 year age vecs, into this set of a mix
 #### of 5 and 10 year age groups
-phi2000 <- cbind(new_out[,10:14], 
-                 apply(new_out[,15:16], 1, sum),apply(new_out[,17:18], 1, sum),
-                 apply(new_out[,19:20], 1, sum),new_out[,21:22], 
-                 apply(new_out[,23:24], 1, sum),apply(new_out[,25:26], 1, sum),
-                 apply(new_out[,27:29], 1, sum))
+phi2000 <- cbind(total_res[,10:14], 
+                 apply(total_res[,15:16], 1, sum),apply(total_res[,17:18], 1, sum),
+                 apply(total_res[,19:20], 1, sum),total_res[,21:22], 
+                 apply(total_res[,23:24], 1, sum),apply(total_res[,25:26], 1, sum),
+                 apply(total_res[,27:29], 1, sum))
 names(phi2000) <- names(y2000)
 phi2000$ID <- unlist(lapply(1:I, function(u) rep(u, J)))
 phi2000$seed <- rep(c(1:J), I)
 
-psi2010 <- cbind(new_out[,32:36], apply(new_out[,37:38], 1, sum),
-                 apply(new_out[,39:40], 1, sum), apply(new_out[,41:42], 1, sum),
-                 new_out[,43:44], apply(new_out[,45:46], 1, sum), 
-                 apply(new_out[,47:48], 1, sum), apply(new_out[,49:53], 1, sum))
+psi2010 <- cbind(total_res[,32:36], apply(total_res[,37:38], 1, sum),
+                 apply(total_res[,39:40], 1, sum), apply(total_res[,41:42], 1, sum),
+                 total_res[,43:44], apply(total_res[,45:46], 1, sum), 
+                 apply(total_res[,47:48], 1, sum), apply(total_res[,49:53], 1, sum))
 names(psi2010) <- names(y2000)
 psi2010$ID <- unlist(lapply(1:I, function(u) rep(u, J)))
 psi2010$seed <- rep(c(1:J), I)
@@ -89,29 +93,20 @@ for (i in 1:I) {
     product = product*dnorm(x=y2000[k], mean=means[k], sd=sqrt(var))
   }
   weights[i] <- product
-} #### ISSUE<- weights getting below machine precision on basically all sets
+} 
 
-logweights <- rep(0,I)
-for (i in 1:I) {
-  logweights[i] <- (-K/2*log(2*pi*post.var[i]) - 1/(2*post.var[i])*sum((y2000-a-mus[2:14])^2))
+
+posterior2000 <- function(x, k) {
+  mysum <- 0
+  for (i in 1:I) {
+    postmean <- post.means[i,k]
+    postsd <- sqrt(post.var[i])
+    mysum = mysum + weights[i]*dnorm(x, mean=postmean, sd=postsd)
+  }
+  return(mysum)
 }
 
-
-par(mfrow=c(3,3))
-for (k in 1:K) {
-  testmean <- as.numeric(a+mus[1,k])
-  test_sd <- sqrt(sigma_sq_is[1]+sigma_sq_delta/J)
-  plot(0:2000, dnorm(0:2000, mean=testmean, sd=test_sd), type='l', ylab="", xlab="")
-  abline(v=y2000[k])
-}
-
-#### THIS IS KIND OF WIERD, BEC IT IS GIVING HIGH WEIGHT TO
-#### BAD PARAMETERS BC OF THIS A THING.
-### IDK IF I LIKE A. Bad for "figuring out which params are best".
-### But maybe good for projection?? I guess let's check?
-
-
-posterior <- function(x, k) {
+posterior2010 <- function(x, k) {
   ba <- 2
   bv <- 2
   mysum <- 0
@@ -123,16 +118,76 @@ posterior <- function(x, k) {
   return(mysum)
 }
 
-
-for (age in 1:K) {
+png('posterior2000.1.png')
+par(mfrow=c(3,3))
+for (age in 1:9) {
   xrange <- c(0:2500)
-  posteriors <- posterior(xrange, age)
-  plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = paste("Posterior for", names(y2000)[age]))
+  posteriors <- posterior2000(xrange, age)
+  plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = paste("Posterior for", names(y2000)[age], ", 2000"))
+  abline(v=y2000[age], col="red")
+  samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
+  abline(v=quantile(samp, 0.05), lty=2)
+  abline(v=quantile(samp, 0.95), lty=2)
+}
+dev.off()
+png('posterior2000.2.png')
+par(mfrow=c(3,3))
+for (age in 10:13) {
+  xrange <- c(0:2500)
+  posteriors <- posterior2000(xrange, age)
+  plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = paste("Posterior for", names(y2000)[age], ", 2000"))
+  abline(v=y2000[age], col="red")
+  samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
+  abline(v=quantile(samp, 0.05), lty=2)
+  abline(v=quantile(samp, 0.95), lty=2)
+}
+dev.off()
+
+png('posterior2010.1.png')
+par(mfrow=c(3,3))
+for (age in 1:9) {
+  xrange <- c(0:2500)
+  posteriors <- posterior2010(xrange, age)
+  plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = paste("Posterior for", names(y2010)[age], ", 2010"), cex=0.8)
   abline(v=y2010[age], col="red")
   samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
   abline(v=quantile(samp, 0.05), lty=2)
   abline(v=quantile(samp, 0.95), lty=2)
 }
+dev.off()
+png('posterior2010.2.png')
+par(mfrow=c(3,3))
+for (age in 10:13) {
+  xrange <- c(0:2500)
+  posteriors <- posterior2010(xrange, age)
+  plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = paste("Posterior for", names(y2010)[age], ", 2010"), cex=0.8)
+  abline(v=y2010[age], col="red")
+  samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
+  abline(v=quantile(samp, 0.05), lty=2)
+  abline(v=quantile(samp, 0.95), lty=2)
+}
+dev.off()
 
+#### For comparison, what happens if we just look at histogram of ALL
+#### predictions for 25-34 in 2010; no weighting
+
+png("weighed_vs_unweighted.png")
+k <- 6
+allpreds <- psi2010$`25-34`
+real <- as.numeric(y2010[k])
+par(mfrow=c(2,2))
+plot(density(allpreds), main="Unweighted Posterior, 25-34", xlim=c(0,3000), xlab="People")
+abline(v=quantile(allpreds, 0.05), lty=2)
+abline(v=quantile(allpreds, 0.95), lty=2)
+abline(v=real, col="red")
+
+xrange <- c(0:3000)
+posteriors <- posterior2010(xrange, 6)
+plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = "Weighted Posterior, 25-34", cex=0.8, xlim=c(0,3000))
+abline(v=y2010[6], col="red")
+samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
+abline(v=quantile(samp, 0.05), lty=2)
+abline(v=quantile(samp, 0.95), lty=2)
+dev.off()
 
 
