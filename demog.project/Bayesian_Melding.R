@@ -168,22 +168,35 @@ for (age in 10:13) {
 }
 dev.off()
 
+png('plots/posterior2010_prez.png')
+par(mfrow=c(3,5), mar=c(2, 2, 2, 2))
+for (age in 1:13) {
+  xrange <- c(0:2500)
+  posteriors <- posterior2010(xrange, age)
+  plot(xrange, posteriors, type='l', xlab="", ylab="", main = names(y2010)[age], cex=0.8)
+  abline(v=y2010[age], col="red")
+  samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
+  abline(v=quantile(samp, 0.05), lty=2)
+  abline(v=quantile(samp, 0.95), lty=2)
+}
+dev.off()
+
 #### For comparison, what happens if we just look at histogram of ALL
 #### predictions for 25-34 in 2010; no weighting
 
 png("weighed_vs_unweighted_OLDER.png")
-k <- 8
+k <- 6
 allpreds <- psi2010$`25-34`
 real <- as.numeric(y2010[k])
 par(mfrow=c(2,2))
-plot(density(allpreds), main="Unweighted Posterior, 45-54", xlim=c(0,3000), xlab="People")
+plot(density(allpreds), main="All Simulations, 25-34", xlim=c(0,3000), xlab="People")
 abline(v=quantile(allpreds, 0.05), lty=2)
 abline(v=quantile(allpreds, 0.95), lty=2)
 abline(v=real, col="red")
 
 xrange <- c(0:3000)
 posteriors <- posterior2010(xrange, k)
-plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = "Weighted Posterior, 45-54", cex=0.8, xlim=c(0,3000))
+plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = "Weighted Posterior, 25-34", cex=0.8, xlim=c(0,3000))
 abline(v=y2010[k], col="red")
 samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
 abline(v=quantile(samp, 0.05), lty=2)
