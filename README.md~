@@ -1,0 +1,5 @@
+Instructions for reproducing paper results:
+
+- The file Run_Paralell_ALL.R runs the simulation and prints all results to a text file and also saves them to an RData object.
+- The results used in the paper are the combined results from the files results_real.txt and results_real_2.txt (first 100 parameter sets and then subsequent 300 parameter sets). All parameter vectors and their corresponding predicted population vectors in 2000 and 2010 can be found in this file.
+- The file Bayesian_Melding.R

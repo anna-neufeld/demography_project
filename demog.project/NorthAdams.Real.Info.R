@@ -46,3 +46,5 @@ prop.over.45.2000 <- sum(realProps.2000[8:13])
 three.prop.2000 <- c(prop.under.18.2000, 1-prop.over.45.2000-prop.under.18.2000, prop.over.45.2000)
 three.prop.2010 <- c(0.161, 1-0.161-sum(realProps2010[8:13]), sum(realProps2010[8:13]))
 
+
+

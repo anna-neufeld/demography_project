@@ -1,6 +1,8 @@
 #### Set a max on sigma^2 i to downweight unreasonable scenarios??
 ### Being off by more than 200/age group on average is gonna be pretty bad
 ### Max sigma^2_i is correponding to SD=100, so 10,000? Let's try that. 
+library(readr)
+library(dplyr)
 source("NorthAdams.Real.Info.R")
 y2010 <- realNums2010
 y2010 <- c(y2010[1:5], sum(y2010[6:7]),sum(y2010[8:9]), 
@@ -142,20 +144,36 @@ for (age in 10:13) {
 }
 dev.off()
 
-png("weighed_vs_unweighted_NARROWER.png")
+png("weighed_vs_unweighted_success_and_fail.png")
 k <- 6
-allpreds <- psi2010$`25-34`
+allpreds <- psi2010[,k]
 real <- as.numeric(y2010[k])
 par(mfrow=c(2,2))
-plot(density(allpreds), main="Unweighted Posterior, 25-34", xlim=c(0,3000), xlab="People")
+plot(density(allpreds), main="All Simulation Results, 25-34", xlim=c(0,3000), xlab="People")
 abline(v=quantile(allpreds, 0.05), lty=2)
 abline(v=quantile(allpreds, 0.95), lty=2)
 abline(v=real, col="red")
 
 xrange <- c(0:3000)
-posteriors <- posterior2010(xrange, 6)
+posteriors <- posterior2010(xrange, k)
 plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = "Weighted Posterior, 25-34", cex=0.8, xlim=c(0,3000))
 abline(v=y2010[6], col="red")
+samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
+abline(v=quantile(samp, 0.05), lty=2)
+abline(v=quantile(samp, 0.95), lty=2)
+
+k <- 8
+allpreds <- psi2010[,8]
+real <- as.numeric(y2010[k])
+plot(density(allpreds), main="All Simulation Results, 45-54", xlim=c(0,3000), xlab="People")
+abline(v=quantile(allpreds, 0.05), lty=2)
+abline(v=quantile(allpreds, 0.95), lty=2)
+abline(v=real, col="red")
+
+xrange <- c(0:3000)
+posteriors <- posterior2010(xrange, 8)
+plot(xrange, posteriors, type='l', xlab="People", ylab="Density", main = "Weighted Posterior, 45-54", cex=0.8, xlim=c(0,3000))
+abline(v=y2010[k], col="red")
 samp <- sample(xrange, size=10000,prob=posteriors, replace=TRUE)
 abline(v=quantile(samp, 0.05), lty=2)
 abline(v=quantile(samp, 0.95), lty=2)
