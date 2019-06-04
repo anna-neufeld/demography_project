@@ -5,3 +5,4 @@ Instructions for reproducing paper results:
 - The file Bayesian_Melding.R produces the main results for the paper, including the coverage plots and the reported parameter values. 
 - The file Bayesian_Melding_2.R reproduces the main results in the setting where the bias a = 0.
 - The file Make_Posteriors_Narrower_2.R carries out the version where standard errors are capped at a maximum. 
+- The file Square_Root.R redoes the main results with square root transformation applied to all outputs. This change did not change the covereage results at all. And while the standard errors get smaller due to the scale of the data, the posteriors are still unreasoanbly large. No big change from adding this.
